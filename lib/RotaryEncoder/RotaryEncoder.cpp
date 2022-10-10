@@ -1,0 +1,107 @@
+#include <Arduino.h>
+#include "RotaryEncoder.h"
+
+uint8_t RotaryEncoder::PULL_UP_CW_STATES[] = {0b11, 0b01, 0b00, 0b10};
+
+RotaryEncoder::RotaryEncoder(uint8_t clkA, uint8_t dtB) : RotaryEncoder::RotaryEncoder(clkA, dtB, RotaryEncoder::PULL_UP_CW_STATES) {};
+
+RotaryEncoder::RotaryEncoder(uint8_t clkA, uint8_t dtB, uint8_t cwStates[]) {
+  this->clkPin = clkA;
+  this->dtPin = dtB;
+  this->stack = new bool[32];
+  this->stackItemsSize = 0;
+  this->cwStates = cwStates;
+  this->state = 0;
+};
+
+void RotaryEncoder::begin() {
+  pinMode(this->clkPin, INPUT);
+  pinMode(this->dtPin, INPUT);
+  this->changeState(digitalRead(this->clkPin), digitalRead(this->dtPin));
+}
+
+void RotaryEncoder::queue() {
+  if (this->changeFn == NULL) {
+    return;
+  }
+  if (this->stackItemsSize >= 32) {
+    return;
+  }
+
+  this->changeState(digitalRead(this->clkPin), digitalRead(this->dtPin));
+  int8_t rotation = this->getRotation();
+  if (rotation == -1) {
+    return;
+  }
+  this->stack[this->stackItemsSize] = rotation;
+  this->stackItemsSize++;
+  this->state = 0;
+};
+
+void RotaryEncoder::unqueue() {
+  if (this->changeFn == NULL) {
+    return;
+  }
+  
+  noInterrupts();
+  for (uint8_t i = 0; i < this->stackItemsSize; i++) {
+    this->changeFn(this->stack[i]);
+  }
+  this->stackItemsSize = 0;
+  interrupts();
+};
+
+bool RotaryEncoder::unqueueOne() {
+  if (this->changeFn == NULL) {
+    return false;
+  }
+  if (this->stackItemsSize == 0) {
+    return false;
+  }
+  
+  noInterrupts();
+  bool value = this->stack[this->stackItemsSize - 1];
+  this->stackItemsSize--;
+  interrupts();
+  this->changeFn(value);
+  return true;
+};
+
+void RotaryEncoder::onChange(void (*fn)(bool)) {
+  this->changeFn = fn;
+};
+
+int8_t RotaryEncoder::getRotation() {
+  if (state > 3) {
+    return 1;
+  }
+  if (state < -3) {
+    return 0;
+  }
+  return -1;
+};
+
+void RotaryEncoder::changeState(int clkValue, int dtValue) {
+  uint8_t state = clkValue * 2 + dtValue;
+  int8_t newStateIndex = this->getStateIndex(state);
+  if (newStateIndex == -1) {
+    return;
+  }
+
+  int8_t diff = newStateIndex - (this->state % 4);
+  if (diff == 3) {
+    diff = -1;
+  } else if (diff == -3) {
+    diff = 1;
+  }
+  this->state += diff;
+};
+
+int8_t RotaryEncoder::getStateIndex(uint8_t state) {
+  for (uint8_t i = 0; i < 4; i++) {
+    if (state == this->cwStates[i]) {
+      return i;
+    }
+  }
+  return -1;
+}
