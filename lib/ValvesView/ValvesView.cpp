@@ -66,21 +66,39 @@ void ValvesView::render() {
     do {
         uint16_t bounds[4];
         components.setFullScreenBounds(bounds);
-        components.drawScrollBar(bounds, 7, this->scrollIndex);
-        components.shrinkBounds(bounds, 0, 4);
-        components.shrinkBoundsRight(bounds, 8);
-        bounds[3] = bounds[3] / 2;
         for (int i = 0; i < 2; i++) {
-            components.drawTextLeft(bounds, this->valves[this->scrollIndex + i]);
-            if (this->scrollIndex + i == this->focusIndex) {
-                uint16_t focusBounds[4];
-                components.copyBounds(bounds, focusBounds);
-                components.expandBounds(focusBounds, 0, 4);
-                components.shrinkBounds(focusBounds, 2, 0);
-                components.drawFocus(focusBounds);
+            uint16_t rowBounds[4];
+            components.copyBounds(bounds, rowBounds);
+            components.setRowBounds(rowBounds, 2, i);
+            for (int j = 0; j < 8; j++) {
+                uint16_t cellBounds[4];
+                components.copyBounds(rowBounds, cellBounds);
+                components.setColumnBounds(cellBounds, 4, j);
+                char numberStr[2] = {48 + i * 4 + j + 1, '\0'};
+                components.drawTextCenter(cellBounds, numberStr);
+                if (this->focusIndex == i * 4 + j) {
+                    components.setCenterTextBounds(cellBounds, numberStr);
+                    components.drawFocus(cellBounds, 6);
+                }
             }
-            bounds[1] += bounds[3];
         }
 
+        // uint16_t bounds[4];
+        // components.setFullScreenBounds(bounds);
+        // components.drawScrollBar(bounds, 7, this->scrollIndex);
+        // components.shrinkBounds(bounds, 0, 4);
+        // components.shrinkBoundsRight(bounds, 8);
+        // bounds[3] = bounds[3] / 2;
+        // for (int i = 0; i < 2; i++) {
+        //     components.drawTextLeft(bounds, this->valves[this->scrollIndex + i]);
+        //     if (this->scrollIndex + i == this->focusIndex) {
+        //         uint16_t focusBounds[4];
+        //         components.copyBounds(bounds, focusBounds);
+        //         components.expandBounds(focusBounds, 0, 4);
+        //         components.shrinkBounds(focusBounds, 2, 0);
+        //         components.drawFocus(focusBounds);
+        //     }
+        //     bounds[1] += bounds[3];
+        // }
     } while (this->oled->nextPage());
 }

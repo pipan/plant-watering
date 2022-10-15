@@ -13,6 +13,8 @@ class OledComponents {
         void setLeftTextBounds(uint16_t bounds[], char *text);
         void setRightTextBounds(uint16_t bounds[], char *text);
         void setRightTextBounds(uint16_t bounds[], char *text, uint8_t start, uint8_t length);
+        void setRowBounds(uint16_t *bounds, uint8_t total, uint8_t position);
+        void setColumnBounds(uint16_t *bounds, uint8_t total, uint8_t position);
         void expandBounds(uint16_t *bounds, int8_t size);
         void expandBounds(uint16_t *bounds, int8_t vertical, int8_t horizontal);
         void shrinkBounds(uint16_t *bounds, int8_t size);
@@ -23,6 +25,8 @@ class OledComponents {
         void drawTextLeft(uint16_t bounds[], char *text);
         void drawTextRight(uint16_t bounds[], char *text);
         void drawFocus(uint16_t bounds[]);
+        void drawFocus(uint16_t bounds[], int expand);
+        void drawIconsAround(uint16_t bounds[], const unsigned char *icons[], unsigned char length, int width, int height);
     private:
         U8G2 *oled;
 };

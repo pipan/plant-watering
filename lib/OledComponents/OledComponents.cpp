@@ -100,6 +100,16 @@ void OledComponents::setRightTextBounds(uint16_t bounds[], char *text, uint8_t s
     bounds[3] = height;
 }
 
+void OledComponents::setRowBounds(uint16_t *bounds, uint8_t total, uint8_t position) {
+    bounds[3] = bounds[3] / total;
+    bounds[1] += position * bounds[3];
+}
+
+void OledComponents::setColumnBounds(uint16_t *bounds, uint8_t total, uint8_t position) {
+    bounds[2] = bounds[2] / total;
+    bounds[0] += position * bounds[2];
+}
+
 void OledComponents::drawTextCenter(uint16_t bounds[], char *text) {
     uint16_t textBounds[4];
     this->copyBounds(bounds, textBounds);
@@ -134,6 +144,13 @@ void OledComponents::drawFocus(uint16_t bounds[]) {
     this->oled->drawVLine(bounds[0] + bounds[2] - 1, bounds[1] + bounds[3] - size - 1, size);
 }
 
+void OledComponents::drawFocus(uint16_t bounds[], int expand) {
+    uint16_t expandedBounds[4];
+    this->copyBounds(bounds, expandedBounds);
+    this->expandBounds(expandedBounds, expand);
+    this->drawFocus(expandedBounds);
+}
+
 void OledComponents::drawScrollBar(uint16_t *bounds, int8_t length, int8_t index) {
     if (length <= 1) {
         return;
@@ -149,4 +166,17 @@ void OledComponents::drawScrollBar(uint16_t *bounds, int8_t length, int8_t index
     uint8_t scrollBarHeight = bounds[3] / length;
     uint8_t visibleScrollBarHeight = max(scrollBarHeight, minScrollBarHeight);
     this->oled->drawBox(bounds[0] + bounds[2] - scrollBarWidth, bounds[1] + index * scrollBarHeight, scrollBarWidth, visibleScrollBarHeight);
+}
+
+void OledComponents::drawIconsAround(uint16_t bounds[], const unsigned char *icons[], unsigned char length, int width, int height) {
+    uint16_t columnBounds[4];
+    this->copyBounds(bounds, columnBounds);
+    this->setColumnBounds(columnBounds, length, 0);
+    for (int i = 0; i < length; i++) {
+        uint16_t iconBounds[4];
+        this->copyBounds(columnBounds, iconBounds);
+        this->setCenterBounds(iconBounds, width, height);
+        this->oled->drawXBM(iconBounds[0], iconBounds[1], iconBounds[2], iconBounds[3], icons[i]);
+        columnBounds[0] += columnBounds[2];
+    }
 }

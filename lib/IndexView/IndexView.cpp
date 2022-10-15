@@ -32,7 +32,6 @@ void IndexView::onInput(bool clockwise) {
         this->focusIndex = 2;
     }
     this->changed = true;
-    // this->render();
 }
 
 void IndexView::onClick() {
@@ -69,8 +68,7 @@ void IndexView::render() {
             this->oled->drawXBM(iconBounds[0], iconBounds[1], iconBounds[2], iconBounds[3], icons[i]);
             
             if (focusIndex == i) {
-                components.expandBounds(iconBounds, 6);
-                components.drawFocus(iconBounds);
+                components.drawFocus(iconBounds, 6);
             }
             
             bounds[0] += bounds[2];
