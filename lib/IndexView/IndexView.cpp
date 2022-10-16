@@ -6,6 +6,8 @@
 #include <U8g2lib.h>
 #include <Icons.h>
 #include <OledComponents.h>
+#include <bounds.h>
+#include <Fonts.h>
 
 IndexView::IndexView(U8G2 *oled, ViewHistory *history) {
     this->oled = oled;
@@ -19,18 +21,14 @@ void IndexView::mount() {
     this->render();
 }
 
-void IndexView::unmount() {
-    this->oled->clearDisplay();
-}
+void IndexView::unmount() {}
 
 void IndexView::onInput(bool clockwise) {
-    this->focusIndex += clockwise ? 1 : -1;
-    if (this->focusIndex > 2) {
-        this->focusIndex = 0;
+    int8_t newFocusIndex = min(max(this->focusIndex + (clockwise ? 1 : -1), 0), 2);
+    if (newFocusIndex != this->focusIndex) {
+        return;
     }
-    if (this->focusIndex < 0) {
-        this->focusIndex = 2;
-    }
+    this->focusIndex = newFocusIndex;
     this->changed = true;
 }
 
@@ -54,24 +52,15 @@ void IndexView::render() {
     }
     this->changed = false;
     OledComponents components(this->oled);
+    this->oled->setFont(Fonts::size9);
     this->oled->firstPage();
     const unsigned char *icons[3] = {Icons::valve, Icons::battery, Icons::settings};
     do {
-        uint16_t bounds[4];
+        uint8_t bounds[4];
         components.setFullScreenBounds(bounds);
-        bounds[2] = bounds[2] / 3;
-
-        for (int i = 0; i < 3; i++) {
-            uint16_t iconBounds[4];
-            components.copyBounds(bounds, iconBounds);
-            components.setCenterBounds(iconBounds, Icons::width, Icons::height);
-            this->oled->drawXBM(iconBounds[0], iconBounds[1], iconBounds[2], iconBounds[3], icons[i]);
-            
-            if (focusIndex == i) {
-                components.drawFocus(iconBounds, 6);
-            }
-            
-            bounds[0] += bounds[2];
-        }
+        components.drawIconsAround(bounds, icons, 3, Icons::width, Icons::height);
+        setColumnBounds(bounds, 3, this->focusIndex);
+        setCenterBounds(bounds, Icons::width, Icons::height);
+        components.drawFocus(bounds, 6);
     } while (this->oled->nextPage());
 }

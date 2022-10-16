@@ -18,7 +18,6 @@ class TimeView : public View {
         static const uint32_t multiplier[];
         U8G2 *oled;
         ViewHistory *history;
-        uint64_t timestamp;
         int8_t focusIndex;
         int8_t inputIndex;
         Datetime *value;

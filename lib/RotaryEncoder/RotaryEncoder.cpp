@@ -8,7 +8,6 @@ RotaryEncoder::RotaryEncoder(uint8_t clkA, uint8_t dtB) : RotaryEncoder::RotaryE
 RotaryEncoder::RotaryEncoder(uint8_t clkA, uint8_t dtB, uint8_t cwStates[]) {
   this->clkPin = clkA;
   this->dtPin = dtB;
-  this->stack = new bool[32];
   this->stackItemsSize = 0;
   this->cwStates = cwStates;
   this->state = 0;
@@ -60,8 +59,7 @@ bool RotaryEncoder::unqueueOne() {
   }
   
   noInterrupts();
-  bool value = this->stack[this->stackItemsSize - 1];
-  this->stackItemsSize--;
+  bool value = this->stack[this->stackItemsSize--];
   interrupts();
   this->changeFn(value);
   return true;
@@ -81,12 +79,9 @@ int8_t RotaryEncoder::getRotation() {
   return -1;
 };
 
-void RotaryEncoder::changeState(int clkValue, int dtValue) {
+void RotaryEncoder::changeState(uint8_t clkValue, uint8_t dtValue) {
   uint8_t state = clkValue * 2 + dtValue;
-  int8_t newStateIndex = this->getStateIndex(state);
-  if (newStateIndex == -1) {
-    return;
-  }
+  uint8_t newStateIndex = this->getStateIndex(state);
 
   int8_t diff = newStateIndex - (this->state % 4);
   if (diff == 3) {
@@ -97,11 +92,11 @@ void RotaryEncoder::changeState(int clkValue, int dtValue) {
   this->state += diff;
 };
 
-int8_t RotaryEncoder::getStateIndex(uint8_t state) {
+uint8_t RotaryEncoder::getStateIndex(uint8_t state) {
   for (uint8_t i = 0; i < 4; i++) {
     if (state == this->cwStates[i]) {
       return i;
     }
   }
-  return -1;
+  return 0;
 }

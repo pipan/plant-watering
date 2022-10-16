@@ -1,21 +1,20 @@
 #include "TimeView.h"
 #include <U8g2lib.h>
 #include <ViewHistory.h>
-#include <Fonts.h>
 #include <OledComponents.h>
 #include <Datetime.h>
+#include <bounds.h>
 
 const uint32_t TimeView::multiplier[] = {60, 3600, 86400};
 
 TimeView::TimeView(U8G2 *oled, ViewHistory *history) {
     this->oled = oled;
     this->history = history;
-    this->timestamp = 0;
     this->focusIndex = 0;
     this->inputIndex = -1;
     this->inputVisible = true;
     this->visibilityDuration = 0;
-    this->value = new Datetime(0);
+    this->value = new Datetime(0); // todo destruct
     this->changed = false;
 }
 
@@ -30,13 +29,12 @@ void TimeView::render() {
     }
     this->changed = false;
     OledComponents components(this->oled);
-    this->oled->setFont(Fonts::size9);
     this->oled->firstPage();
     do {
-        uint16_t bounds[4];
-        uint16_t focusBounds[4];
+        uint8_t bounds[4];
+        uint8_t focusBounds[4];
         components.setFullScreenBounds(bounds);
-        components.shrinkBounds(bounds, 0, 6);
+        shrinkBounds(bounds, 0, 6);
         bounds[3] = bounds[3] / 2;
         char timeStr[] = "00:00";
         components.drawTextLeft(bounds, "Time");
@@ -44,7 +42,7 @@ void TimeView::render() {
         this->value->formatLeadingZero(timeStr + 3, this->value->getMinutes(), 2);
         components.drawTextRight(bounds, timeStr);
         if (this->focusIndex >=0 && this->focusIndex < 2) {
-            components.copyBounds(bounds, focusBounds);
+            copyBounds(bounds, focusBounds);
             if (this->focusIndex == 0) {
                 components.setRightTextBounds(focusBounds, timeStr, 0, 2);
             } else {
@@ -60,7 +58,7 @@ void TimeView::render() {
         this->value->formatLeadingZero(dateStr + 7, this->value->getYear(), 4);
         components.drawTextRight(bounds, dateStr);
         if (this->focusIndex >= 2) {
-            components.copyBounds(bounds, focusBounds);
+            copyBounds(bounds, focusBounds);
             if (this->focusIndex == 2) {
                 components.setRightTextBounds(focusBounds, dateStr, 0, 2);
             } else if (this->focusIndex == 3) {
@@ -70,9 +68,9 @@ void TimeView::render() {
             }
         }
         if (this->inputIndex > -1 && !this->inputVisible) {
-            components.expandBounds(focusBounds, 1);
+            expandBounds(focusBounds, 1);
         }
-        components.expandBounds(focusBounds, 6, 3);
+        expandBounds(focusBounds, 6, 3);
         components.drawFocus(focusBounds);
     } while (this->oled->nextPage());
 }
@@ -109,10 +107,10 @@ void TimeView::onInput(bool clockwise) {
             this->value->addSeconds(diff * 86400);
         }
         if (this->inputIndex == 3) {
-            this->value->addMonths(diff);
+            diff > 0 ? this->value->addMonths(diff) : this->value->subtractMonths(diff * -1);
         }
         if (this->inputIndex == 4) {
-            this->value->addYears(diff);
+            diff > 0 ? this->value->addYears(diff) : this->value->subtractYears(diff * -1);
         }
     } else {
         this->focusIndex += diff;

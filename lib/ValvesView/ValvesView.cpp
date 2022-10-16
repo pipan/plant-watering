@@ -2,16 +2,15 @@
 #include <ViewHistory.h>
 #include <Arduino.h>
 #include <U8g2lib.h>
-#include <Fonts.h>
 #include <OledComponents.h>
 #include <ValveDetailView.h>
+#include <bounds.h>
 
 ValvesView::ValvesView(U8G2 *oled, ViewHistory *history) {
     this->oled = oled;
     this->history = history;
     this->focusIndex = 0;
     this->scrollIndex = 0;
-    this->valves = new char*[8] {"One", "Two", "Three", "Four", "five", "Six", "Seven", "Eight"};
     this->changed = false;
 }
 
@@ -33,21 +32,11 @@ void ValvesView::onClick() {
 }
 
 void ValvesView::onInput(bool clockwise) {
-    this->focusIndex += clockwise ? 1 : -1;
-    if (this->focusIndex < 0) {
-        this->focusIndex = 0;
+    int8_t newIndex = min(max(this->focusIndex + (clockwise ? 1 : -1), 0), 7);
+    if (newIndex != this->focusIndex) {
         return;
     }
-    if (this->focusIndex > 7) {
-        this->focusIndex = 7;
-        return;
-    }
-    if (this->scrollIndex > this->focusIndex) {
-        this->scrollIndex = this->focusIndex;
-    }
-    if (this->scrollIndex + 1 < this->focusIndex) {
-        this->scrollIndex = this->focusIndex - 1;
-    }
+    this->scrollIndex = min(max(this->scrollIndex, this->focusIndex - 1), this->focusIndex);
     this->changed = true;
 }
 
@@ -61,20 +50,20 @@ void ValvesView::render() {
     }
     this->changed = false;
     OledComponents components(this->oled);
-    this->oled->setFont(Fonts::size9);
     this->oled->firstPage();
     do {
-        uint16_t bounds[4];
+        uint8_t bounds[4];
         components.setFullScreenBounds(bounds);
         for (int i = 0; i < 2; i++) {
-            uint16_t rowBounds[4];
-            components.copyBounds(bounds, rowBounds);
-            components.setRowBounds(rowBounds, 2, i);
+            uint8_t rowBounds[4];
+            copyBounds(bounds, rowBounds);
+            setRowBounds(rowBounds, 2, i);
             for (int j = 0; j < 8; j++) {
-                uint16_t cellBounds[4];
-                components.copyBounds(rowBounds, cellBounds);
-                components.setColumnBounds(cellBounds, 4, j);
-                char numberStr[2] = {48 + i * 4 + j + 1, '\0'};
+                uint8_t cellBounds[4];
+                copyBounds(rowBounds, cellBounds);
+                setColumnBounds(cellBounds, 4, j);
+                char numberChar = 48 + i * 4 + j + 1;
+                char numberStr[2] = {numberChar, '\0'};
                 components.drawTextCenter(cellBounds, numberStr);
                 if (this->focusIndex == i * 4 + j) {
                     components.setCenterTextBounds(cellBounds, numberStr);
@@ -82,23 +71,5 @@ void ValvesView::render() {
                 }
             }
         }
-
-        // uint16_t bounds[4];
-        // components.setFullScreenBounds(bounds);
-        // components.drawScrollBar(bounds, 7, this->scrollIndex);
-        // components.shrinkBounds(bounds, 0, 4);
-        // components.shrinkBoundsRight(bounds, 8);
-        // bounds[3] = bounds[3] / 2;
-        // for (int i = 0; i < 2; i++) {
-        //     components.drawTextLeft(bounds, this->valves[this->scrollIndex + i]);
-        //     if (this->scrollIndex + i == this->focusIndex) {
-        //         uint16_t focusBounds[4];
-        //         components.copyBounds(bounds, focusBounds);
-        //         components.expandBounds(focusBounds, 0, 4);
-        //         components.shrinkBounds(focusBounds, 2, 0);
-        //         components.drawFocus(focusBounds);
-        //     }
-        //     bounds[1] += bounds[3];
-        // }
     } while (this->oled->nextPage());
 }

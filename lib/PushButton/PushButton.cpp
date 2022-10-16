@@ -1,13 +1,13 @@
 #include "PushButton.h"
-#include "../Time/Time.h"
+#include <Time.h>
 #include <Arduino.h>
 
-#define PUSH_BUTTON_EVENT_HOLD 2
-#define PUSH_BUTTON_EVENT_CLICK 1
+const uint8_t PushButton::PUSH_BUTTON_EVENT_CLICK = 1;
+const uint8_t PushButton::PUSH_BUTTON_EVENT_HOLD = 2;
 
 PushButton::PushButton(uint8_t pin) : PushButton(pin, HIGH) {}
 
-PushButton::PushButton(uint8_t pin, int pushState) {
+PushButton::PushButton(uint8_t pin, uint8_t pushState) {
     this->pin = pin;
     this->valueAt = 0;
     this->cycleEvent = 0;
@@ -47,7 +47,7 @@ void PushButton::onRelease(void (*fn)()) {
     this->releaseFn = fn;
 }
 
-void PushButton::onHold(void (*fn)(), unsigned int treshold) {
+void PushButton::onHold(void (*fn)(), uint16_t treshold) {
     this->holdFn = fn;
     this->holdTreshold = treshold;
 }
@@ -74,15 +74,15 @@ void PushButton::checkHold() {
     if (this->holdFn == NULL) {
         return;
     }
-    if (this->value == !this->pushState) {
+    if (this->value != this->pushState) {
         return;
     }
     if (this->cycleEvent > 0) {
         return;
     }
-    long diff = Time::msDiff(this->valueAt, millis());
+    uint64_t diff = Time::msDiff(this->valueAt, millis());
     if (diff > this->holdTreshold) {
-        this->cycleEvent = PUSH_BUTTON_EVENT_HOLD;
+        this->cycleEvent = PushButton::PUSH_BUTTON_EVENT_HOLD;
         this->holdFn();
     }
 }
@@ -94,6 +94,6 @@ void PushButton::triggerClick() {
     if (this->clickFn == NULL) {
         return;
     }
-    this->cycleEvent = PUSH_BUTTON_EVENT_CLICK;
+    this->cycleEvent = PushButton::PUSH_BUTTON_EVENT_CLICK;
     this->clickFn();
 }

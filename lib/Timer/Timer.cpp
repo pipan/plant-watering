@@ -4,7 +4,7 @@
 Timer::Timer() { };
 
 bool Timer::beginHz(unsigned int seconds) {
-    unsigned long maxOcr = 65536;
+    unsigned int maxOcr = 65535;
     unsigned long ocrValue = (16000000 / 1024) * seconds - 1;
     if (ocrValue >= maxOcr) {
         return false;

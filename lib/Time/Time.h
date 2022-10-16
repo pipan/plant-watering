@@ -9,7 +9,7 @@ class Time {
         static const char* getMonthShortStr(unsigned char month);
     private:
         static const unsigned char monthDays[];
-        static const char **monthShortStr;
+        static const char *monthShortStr[];
 };
 
 #endif

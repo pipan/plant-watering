@@ -2,8 +2,8 @@
 #include <U8g2lib.h>
 #include <ViewHistory.h>
 #include <OledComponents.h>
-#include <Fonts.h>
 #include <Icons.h>
+#include <bounds.h>
 
 ValveDetailView::ValveDetailView(U8G2 *oled, ViewHistory *history, unsigned char index) {
     this->oled = oled;
@@ -44,14 +44,13 @@ void ValveDetailView::onTick(unsigned long msDiff) {
     }
     this->changed = false;
     OledComponents components(this->oled);
-    this->oled->setFont(Fonts::size9);
     this->oled->firstPage();
     do {
-        uint16_t bounds[4];
+        uint8_t bounds[4];
         components.setFullScreenBounds(bounds);
         components.drawScrollBar(bounds, 2, this->scrollIndex);
-        components.shrinkBounds(bounds, 0, 4);
-        components.shrinkBoundsRight(bounds, 8);
+        shrinkBounds(bounds, 0, 4);
+        shrinkBoundsRight(bounds, 8);
         bounds[3] = bounds[3] / 2;
         if (this->scrollIndex == 0) {
             const unsigned char *icons[2] = {Icons::run, Icons::calibration};

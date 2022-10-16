@@ -13,8 +13,8 @@ PushButton encoderButton(4, LOW);
 ViewController *viewController = NULL;
 Timer *timer = NULL;
 unsigned long lastTick = 0;
-const int TIMER_LENGH = 4;
-int timerTotal = 0;
+const char TIMER_LENGH = 4;
+char timerTotal = 0;
 
 void encoderChange(bool clockwise) {
   viewController->onInput(clockwise);
@@ -38,8 +38,6 @@ ISR(TIMER1_COMPA_vect){
     return;
   }
   timerTotal = 0;
-  Serial.print("Timer interupt: ");
-  Serial.println(millis());
 }
 
 void setup() {

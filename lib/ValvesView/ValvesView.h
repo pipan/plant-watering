@@ -15,7 +15,6 @@ class ValvesView : public View {
         virtual void onInput(bool clockwise);
         virtual void onTick(unsigned long msDiff);
     private:
-        char **valves;
         int8_t focusIndex;
         uint8_t scrollIndex;
         bool changed;

@@ -1,14 +1,13 @@
 #include "Time.h"
 
 const unsigned char Time::monthDays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
-const char** Time::monthShortStr = new char*[12] {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+const char* Time::monthShortStr[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
 unsigned long Time::msDiff(unsigned long before, unsigned long after) {
-    unsigned long diff = after - before;
-    if (diff < 0) {
-        diff = after + (0xFFFFFFF - before);
+    if (after < before) {
+        return after + (0xFFFFFFFFFFFFFFFF - before);
     }
-    return diff;
+    return after - before;
 }
 
 bool Time::isLeapYear(int year) {
