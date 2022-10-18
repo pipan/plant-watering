@@ -111,7 +111,7 @@ void OledComponents::drawScrollBar(uint8_t bounds[], int8_t length, int8_t index
     if (index >= length) {
         index = length - 1;
     }
-    uint8_t scrollBarWidth = 3;
+    uint8_t scrollBarWidth = 2;
     uint8_t minScrollBarHeight = scrollBarWidth * 2;
     uint8_t scrollBarHeight = bounds[3] / length;
     uint8_t visibleScrollBarHeight = max(scrollBarHeight, minScrollBarHeight);

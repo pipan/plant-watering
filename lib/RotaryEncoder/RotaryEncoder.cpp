@@ -23,7 +23,7 @@ void RotaryEncoder::queue() {
   if (this->changeFn == NULL) {
     return;
   }
-  if (this->stackItemsSize >= 32) {
+  if (this->stackItemsSize >= 16) {
     return;
   }
 
@@ -32,7 +32,12 @@ void RotaryEncoder::queue() {
   if (rotation == -1) {
     return;
   }
-  this->stack[this->stackItemsSize] = rotation;
+  if (rotation) {
+    this->stack[this->stackItemsSize / 8] |= (1 << (this->stackItemsSize % 8));
+  } else {
+    this->stack[this->stackItemsSize / 8] &= ~(1 << (this->stackItemsSize % 8));
+  }
+  
   this->stackItemsSize++;
   this->state = 0;
 };
@@ -44,7 +49,7 @@ void RotaryEncoder::unqueue() {
   
   noInterrupts();
   for (uint8_t i = 0; i < this->stackItemsSize; i++) {
-    this->changeFn(this->stack[i]);
+    this->changeFn((this->stack[i / 8] >> (i % 8)) & 1);
   }
   this->stackItemsSize = 0;
   interrupts();
@@ -59,7 +64,9 @@ bool RotaryEncoder::unqueueOne() {
   }
   
   noInterrupts();
-  bool value = this->stack[this->stackItemsSize--];
+  this->stackItemsSize--;
+  bool value = (this->stack[this->stackItemsSize / 8] >> (this->stackItemsSize % 8)) & 1;
+  
   interrupts();
   this->changeFn(value);
   return true;

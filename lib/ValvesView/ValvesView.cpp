@@ -10,7 +10,6 @@ ValvesView::ValvesView(U8G2 *oled, ViewHistory *history) {
     this->oled = oled;
     this->history = history;
     this->focusIndex = 0;
-    this->scrollIndex = 0;
     this->changed = false;
 }
 
@@ -33,10 +32,10 @@ void ValvesView::onClick() {
 
 void ValvesView::onInput(bool clockwise) {
     int8_t newIndex = min(max(this->focusIndex + (clockwise ? 1 : -1), 0), 7);
-    if (newIndex != this->focusIndex) {
+    if (newIndex == this->focusIndex) {
         return;
     }
-    this->scrollIndex = min(max(this->scrollIndex, this->focusIndex - 1), this->focusIndex);
+    this->focusIndex = newIndex;
     this->changed = true;
 }
 

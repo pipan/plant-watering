@@ -5,8 +5,7 @@
 
 class Fonts {
     public:
-        static const uint8_t *size9;
-        static const uint8_t *size16;
+        static const uint8_t *size10;
 };
 
 #endif

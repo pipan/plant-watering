@@ -25,7 +25,7 @@ void IndexView::unmount() {}
 
 void IndexView::onInput(bool clockwise) {
     int8_t newFocusIndex = min(max(this->focusIndex + (clockwise ? 1 : -1), 0), 2);
-    if (newFocusIndex != this->focusIndex) {
+    if (newFocusIndex == this->focusIndex) {
         return;
     }
     this->focusIndex = newFocusIndex;
@@ -52,7 +52,7 @@ void IndexView::render() {
     }
     this->changed = false;
     OledComponents components(this->oled);
-    this->oled->setFont(Fonts::size9);
+    this->oled->setFont(Fonts::size10);
     this->oled->firstPage();
     const unsigned char *icons[3] = {Icons::valve, Icons::battery, Icons::settings};
     do {

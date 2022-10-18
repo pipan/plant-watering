@@ -18,7 +18,7 @@ class RotaryEncoder
     int8_t state;
     uint8_t clkPin;
     uint8_t dtPin;
-    bool stack[32];
+    uint8_t stack[2];
     uint8_t stackItemsSize;
     int8_t getRotation();
     void changeState(uint8_t clkValue, uint8_t dtValue);

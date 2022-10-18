@@ -16,7 +16,6 @@ class ValvesView : public View {
         virtual void onTick(unsigned long msDiff);
     private:
         int8_t focusIndex;
-        uint8_t scrollIndex;
         bool changed;
         U8G2 *oled;
         ViewHistory *history;
