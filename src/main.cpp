@@ -6,26 +6,29 @@
 #include <U8g2lib.h>
 #include <Time.h>
 #include <Timer.h>
+#include <Wire.h>
+#include <Rtc.h>
 
 U8G2_SSD1306_128X64_NONAME_2_4W_SW_SPI oled(U8G2_R0, 13, 12, 10, 11, 9);
 RotaryEncoder encoder(2, 3);
 PushButton encoderButton(4, LOW);
-ViewController *viewController = NULL;
-Timer *timer = NULL;
+ViewController viewController;
+Timer timer;
+Rtc rtc;
 unsigned long lastTick = 0;
 const char TIMER_LENGH = 4;
 char timerTotal = 0;
 
 void encoderChange(bool clockwise) {
-  viewController->onInput(clockwise);
+  viewController.onInput(clockwise);
 }
 
 void buttonClick() {
-  viewController->onClick();
+  viewController.onClick();
 }
 
 void buttonHold() {
-  viewController->onHold();
+  viewController.onHold();
 }
 
 void interupt() {
@@ -46,8 +49,7 @@ void setup() {
   encoder.begin();
   encoderButton.begin();
 
-  timer = new Timer();
-  timer->beginHz(TIMER_LENGH);
+  timer.beginHz(TIMER_LENGH);
 
   encoder.onChange(encoderChange);
   encoderButton.onHold(buttonHold, 500);
@@ -55,8 +57,13 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(2), interupt, CHANGE);
   attachInterrupt(digitalPinToInterrupt(3), interupt, CHANGE);
   
-  viewController = new ViewController();
-  viewController->pushHistory(new IndexView(&oled, viewController));
+  viewController.pushHistory(new IndexView(&oled, &viewController));
+
+  rtc.begin();
+  rtc.setHours(0);
+  rtc.setMinutes(10);
+  rtc.setSeconds(0);
+  rtc.start();
 }
 
 void loop() {
@@ -64,7 +71,7 @@ void loop() {
   encoder.unqueue();
   encoderButton.read();
   unsigned long ms = millis();
-  viewController->onTick(Time::msDiff(lastTick, ms));
+  viewController.onTick(Time::msDiff(lastTick, ms));
   lastTick = ms;
   unsigned long loopDuration = Time::msDiff(loopStart, millis());
   if (loopDuration < 30) {
@@ -73,4 +80,9 @@ void loop() {
     Serial.print("Loop duration: ");
     Serial.println(loopDuration);
   }
+  Serial.print(rtc.getHours(), DEC);
+  Serial.print(":");
+  Serial.print(rtc.getMinutes(), DEC);
+  Serial.print(":");
+  Serial.println(rtc.getSeconds(), DEC);
 }

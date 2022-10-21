@@ -24,7 +24,8 @@ void IndexView::mount() {
 void IndexView::unmount() {}
 
 void IndexView::onInput(bool clockwise) {
-    int8_t newFocusIndex = min(max(this->focusIndex + (clockwise ? 1 : -1), 0), 2);
+    int8_t newFocusIndex = this->focusIndex + (clockwise ? 1 : -1);
+    newFocusIndex = constrain(newFocusIndex, 0, 2);
     if (newFocusIndex == this->focusIndex) {
         return;
     }

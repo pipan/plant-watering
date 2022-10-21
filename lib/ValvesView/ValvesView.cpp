@@ -31,7 +31,8 @@ void ValvesView::onClick() {
 }
 
 void ValvesView::onInput(bool clockwise) {
-    int8_t newIndex = min(max(this->focusIndex + (clockwise ? 1 : -1), 0), 7);
+    int8_t newIndex = this->focusIndex + (clockwise ? 1 : -1);
+    newIndex = constrain(newIndex, 0, 7);
     if (newIndex == this->focusIndex) {
         return;
     }

@@ -130,3 +130,14 @@ void OledComponents::drawIconsAround(uint8_t bounds[], const unsigned char *icon
         columnBounds[0] += columnBounds[2];
     }
 }
+
+void OledComponents::drawInput(uint8_t bounds[], const char *label, const char *value, int8_t expandedFocus) {
+    this->drawTextLeft(bounds, label);
+    this->drawTextRight(bounds, value);
+    if (expandedFocus > -1) {
+        uint8_t focusBounds[4];
+        copyBounds(bounds, focusBounds);
+        this->setRightTextBounds(focusBounds, value);
+        this->drawFocus(focusBounds, expandedFocus);
+    }
+}

@@ -15,6 +15,7 @@ class OledComponents {
         void drawTextCenter(uint8_t bounds[], const char text[]);
         void drawTextLeft(uint8_t bounds[], const char text[]);
         void drawTextRight(uint8_t bounds[], const char text[]);
+        void drawInput(uint8_t bounds[], const char label[], const char value[], int8_t expandedFocus);
         void drawFocus(const uint8_t bounds[]);
         void drawFocus(const uint8_t bounds[], int expand);
         void drawIconsAround(uint8_t bounds[], const unsigned char *icons[], uint8_t length, uint8_t width, uint8_t height);
