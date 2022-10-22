@@ -4,20 +4,28 @@
 class Rtc {
     public:
         static const char DS1307_ADDRESS;
-        Rtc();
-        void begin();
-        void start();
-        void stop();
-        bool isRunning();
-        char getSeconds();
-        char getMinutes();
-        char getHours();
-        void setHours(char hours);
-        void setMinutes(char minutes);
-        void setSeconds(char seconds);
+        static void begin();
+        static void start();
+        static void stop();
+        static bool isRunning();
+        static char getSeconds();
+        static char getMinutes();
+        static char getHours();
+        static char getDate();
+        static char getMonth();
+        static int getYear();
+        static char getYearChar();
+        static void setHours(char hours);
+        static void setMinutes(char minutes);
+        static void setSeconds(char seconds);
+        static void setDate(char date);
+        static void setMonth(char month);
+        static void setYear(int year);
     private:
-        char read(char address);
-        void write(char address, char value);
+        static char read(char address);
+        static char readDecimal(char address);
+        static void write(char address, char value);
+        static void writeDecimal(char address, char value);
 };
 
 #endif

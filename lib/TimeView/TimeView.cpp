@@ -4,23 +4,22 @@
 #include <OledComponents.h>
 #include <Datetime.h>
 #include <bounds.h>
-
-const uint32_t TimeView::multiplier[] = {60, 3600, 86400};
+#include <Rtc.h>
+#include <Datetime.h>
+#include <Number.h>
 
 TimeView::TimeView(U8G2 *oled, ViewHistory *history) {
     this->oled = oled;
     this->history = history;
     this->focusIndex = 0;
-    this->inputIndex = -1;
-    this->inputVisible = true;
-    this->visibilityDuration = 0;
-    this->value = new Datetime(0); // todo destruct
+    this->inputValue = 0;
     this->changed = false;
+    this->refreshTimeBuffer = 0;
 }
 
 void TimeView::mount() {
     this->changed = true;
-    this->render();
+    this->datetime[0] = -1;
 }
 
 void TimeView::render() {
@@ -28,6 +27,9 @@ void TimeView::render() {
         return;
     }
     this->changed = false;
+    if (this->animation.getState() > -1) {
+        datetime[this->focusIndex] = this->inputValue;
+    }
     OledComponents components(this->oled);
     this->oled->firstPage();
     do {
@@ -38,8 +40,8 @@ void TimeView::render() {
         bounds[3] = bounds[3] / 2;
         char timeStr[] = "00:00";
         components.drawTextLeft(bounds, "Time");
-        this->value->formatLeadingZero(timeStr, this->value->getHours(), 2);
-        this->value->formatLeadingZero(timeStr + 3, this->value->getMinutes(), 2);
+        Datetime::formatLeadingZero(timeStr, this->datetime[0], 2);
+        Datetime::formatLeadingZero(timeStr + 3, this->datetime[1], 2);
         components.drawTextRight(bounds, timeStr);
         if (this->focusIndex >=0 && this->focusIndex < 2) {
             copyBounds(bounds, focusBounds);
@@ -50,12 +52,12 @@ void TimeView::render() {
             }
         }
         
-        char dateStr[] = "01.Jan.1970";
+        char dateStr[] = "01.Jan.2000";
         bounds[1] += bounds[3];
         components.drawTextLeft(bounds, "Date");
-        this->value->formatLeadingZero(dateStr, this->value->getDay(), 2);
-        this->value->formatShortMonth(dateStr + 3, this->value->getMonth());
-        this->value->formatLeadingZero(dateStr + 7, this->value->getYear(), 4);
+        Datetime::formatLeadingZero(dateStr, this->datetime[2], 2);
+        Datetime::formatShortMonth(dateStr + 3, this->datetime[3]);
+        Datetime::formatLeadingZero(dateStr + 7, this->datetime[4] + 2000, 4);
         components.drawTextRight(bounds, dateStr);
         if (this->focusIndex >= 2) {
             copyBounds(bounds, focusBounds);
@@ -67,7 +69,7 @@ void TimeView::render() {
                 components.setRightTextBounds(focusBounds, dateStr, 7, 4);
             }
         }
-        if (this->inputIndex > -1 && !this->inputVisible) {
+        if (this->animation.getState() == 0) {
             expandBounds(focusBounds, 1);
         }
         expandBounds(focusBounds, 6, 3);
@@ -76,16 +78,37 @@ void TimeView::render() {
 }
 
 void TimeView::onClick() {
-    if (this->inputIndex > -1) {
-        if (this->focusIndex < 4) {
-            this->inputIndex++;
-            this->focusIndex++;
-        } else {
-            this->inputIndex = -1;        
-        }
+    if (this->animation.getState() == -1) {
+        this->inputValue = this->datetime[this->focusIndex];
     } else {
-        this->inputIndex = this->focusIndex;
+        if (this->focusIndex == 0) {
+            Rtc::setHours(this->inputValue);
+        }
+        if (this->focusIndex == 1) {
+            Rtc::setMinutes(this->inputValue);
+        }
+        
+        if (this->focusIndex == 2) {
+            Rtc::setDate(this->inputValue);
+        }
+        if (this->focusIndex == 3) {
+            Rtc::setMonth(this->inputValue + 1);
+            char maxDate = Datetime::getDaysInMonth(this->datetime[4] + 2000, this->inputValue);
+            if (maxDate < this->datetime[2]) {
+                Rtc::setDate(maxDate);
+            }
+        }
+        if (this->focusIndex == 4) {
+            Rtc::setYear(this->inputValue + 2000);
+            char maxDate = Datetime::getDaysInMonth(this->inputValue + 2000, this->datetime[3]);
+            if (maxDate < this->datetime[2]) {
+                Rtc::setDate(maxDate);
+            }
+        }
+        this->inputValue = 0;
+        this->datetime[0] = -1;
     }
+    this->animation.toggle();
     this->changed = true;
 }
 
@@ -95,43 +118,52 @@ void TimeView::onHold() {
 
 void TimeView::onInput(bool clockwise) {
     char diff = clockwise ? 1 : -1;
-    if (this->inputIndex > -1) {
-        if (this->inputIndex == 0) {
-            this->value->addSeconds(diff * 3600);
+    if (this->animation.getState() > -1) {
+        this->inputValue += diff;
+        if (this->focusIndex == 0) {
+            this->inputValue = constrainCycle(this->inputValue, 0, 23);
         }
-        if (this->inputIndex == 1) {
-            this->value->addSeconds(diff * 60);
+        if (this->focusIndex == 1) {
+            this->inputValue = constrainCycle(this->inputValue, 0, 59);
         }
-        
-        if (this->inputIndex == 2) {
-            this->value->addSeconds(diff * 86400);
+
+        if (this->focusIndex == 2) {
+            char maxDate = Datetime::getDaysInMonth(this->datetime[4] + 2000, this->datetime[3]);
+            this->inputValue = constrainCycle(this->inputValue, 1, maxDate);
         }
-        if (this->inputIndex == 3) {
-            diff > 0 ? this->value->addMonths(diff) : this->value->subtractMonths(diff * -1);
+        if (this->focusIndex == 3) {
+            this->inputValue = constrainCycle(this->inputValue, 0, 11);
         }
-        if (this->inputIndex == 4) {
-            diff > 0 ? this->value->addYears(diff) : this->value->subtractYears(diff * -1);
+        if (this->focusIndex == 4) {
+            this->inputValue = constrainCycle(this->inputValue, 0, 99);
         }
     } else {
-        this->focusIndex += diff;
-        if (this->focusIndex < 0) {
-            this->focusIndex = 0;
+        int8_t newFocus = this->focusIndex + diff;
+        newFocus = constrain(newFocus, 0, 4);
+        if (newFocus == this->focusIndex) {
             return;
         }
-        if (this->focusIndex > 4) {
-            this->focusIndex = 4;
-            return;
-        }
+        this->focusIndex = newFocus;
     }
     this->changed = true;
 }
 
 void TimeView::onTick(unsigned long msDiff) {
-    if (this->inputIndex > -1) {
-        this->visibilityDuration += msDiff;
-        if (this->visibilityDuration >= 250) {
-            this->inputVisible = !this->inputVisible;
-            this->visibilityDuration = 0;
+    if (this->datetime[0] < 0) {
+        this->datetime[0] = Rtc::getHours();
+        this->datetime[1] = Rtc::getMinutes();
+        this->datetime[2] = Rtc::getDate();
+        this->datetime[3] = Rtc::getMonth() - 1;
+        this->datetime[4] = Rtc::getYearChar();
+        this->changed = true;
+    }
+    this->refreshTimeBuffer += msDiff;
+    if (this->refreshTimeBuffer > 10000) {
+        this->refreshTimeBuffer = 0;
+        this->changed = true;
+    }
+    if (this->animation.getState() > -1) {
+        if (this->animation.tick(msDiff)) {
             this->changed = true;
         }
     }

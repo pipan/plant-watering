@@ -1,5 +1,5 @@
 #include "PushButton.h"
-#include <Time.h>
+#include <Datetime.h>
 #include <Arduino.h>
 
 const uint8_t PushButton::PUSH_BUTTON_EVENT_CLICK = 1;
@@ -80,7 +80,7 @@ void PushButton::checkHold() {
     if (this->cycleEvent > 0) {
         return;
     }
-    uint64_t diff = Time::msDiff(this->valueAt, millis());
+    uint64_t diff = Datetime::msDiff(this->valueAt, millis());
     if (diff > this->holdTreshold) {
         this->cycleEvent = PushButton::PUSH_BUTTON_EVENT_HOLD;
         this->holdFn();

@@ -4,7 +4,7 @@
 #include <PushButton.h>
 #include <ViewController.h>
 #include <U8g2lib.h>
-#include <Time.h>
+#include <Datetime.h>
 #include <Timer.h>
 #include <Wire.h>
 #include <Rtc.h>
@@ -14,7 +14,6 @@ RotaryEncoder encoder(2, 3);
 PushButton encoderButton(4, LOW);
 ViewController viewController;
 Timer timer;
-Rtc rtc;
 unsigned long lastTick = 0;
 const char TIMER_LENGH = 4;
 char timerTotal = 0;
@@ -59,11 +58,8 @@ void setup() {
   
   viewController.pushHistory(new IndexView(&oled, &viewController));
 
-  rtc.begin();
-  rtc.setHours(0);
-  rtc.setMinutes(10);
-  rtc.setSeconds(0);
-  rtc.start();
+  Rtc::begin();
+  Rtc::start();
 }
 
 void loop() {
@@ -71,18 +67,13 @@ void loop() {
   encoder.unqueue();
   encoderButton.read();
   unsigned long ms = millis();
-  viewController.onTick(Time::msDiff(lastTick, ms));
+  viewController.onTick(Datetime::msDiff(lastTick, ms));
   lastTick = ms;
-  unsigned long loopDuration = Time::msDiff(loopStart, millis());
+  unsigned long loopDuration = Datetime::msDiff(loopStart, millis());
   if (loopDuration < 30) {
     delay(max(0, 30 - loopDuration));
   } else {
     Serial.print("Loop duration: ");
     Serial.println(loopDuration);
   }
-  Serial.print(rtc.getHours(), DEC);
-  Serial.print(":");
-  Serial.print(rtc.getMinutes(), DEC);
-  Serial.print(":");
-  Serial.println(rtc.getSeconds(), DEC);
 }

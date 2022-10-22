@@ -4,7 +4,7 @@
 #include <View.h>
 #include <U8g2lib.h>
 #include <ViewHistory.h>
-#include <Datetime.h>
+#include <CursorAnimation.h>
 
 class TimeView : public View {
     public:
@@ -15,14 +15,13 @@ class TimeView : public View {
         void onInput(bool clockwise);
         void onTick(unsigned long msDiff);
     private:
-        static const uint32_t multiplier[];
         U8G2 *oled;
         ViewHistory *history;
         int8_t focusIndex;
-        int8_t inputIndex;
-        Datetime *value;
-        uint16_t visibilityDuration;
-        bool inputVisible;
+        CursorAnimation animation;
+        char datetime[5];
+        char inputValue;
+        int refreshTimeBuffer;
         bool changed;
         void render();
 };
