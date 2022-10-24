@@ -9,6 +9,7 @@ class ViewController : public ViewHistory {
         ViewController();
         void pushHistory(View *view);
         void back();
+        void home();
         void onClick();
         void onHold();
         void onInput(bool clockwise);

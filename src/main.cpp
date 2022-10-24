@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <IndexView.h>
+#include <EmptyView.h>
 #include <RotaryEncoder.h>
 #include <PushButton.h>
 #include <ViewController.h>
@@ -8,6 +9,7 @@
 #include <Timer.h>
 #include <Wire.h>
 #include <Rtc.h>
+#include <LowPower.h>
 
 U8G2_SSD1306_128X64_NONAME_2_4W_SW_SPI oled(U8G2_R0, 13, 12, 10, 11, 9);
 RotaryEncoder encoder(2, 3);
@@ -17,17 +19,21 @@ Timer timer;
 unsigned long lastTick = 0;
 const char TIMER_LENGH = 4;
 char timerTotal = 0;
+int idleFor = 0;
 
 void encoderChange(bool clockwise) {
   viewController.onInput(clockwise);
+  idleFor = 0;
 }
 
 void buttonClick() {
   viewController.onClick();
+  idleFor = 0;
 }
 
 void buttonHold() {
   viewController.onHold();
+  idleFor = 0;
 }
 
 void interupt() {
@@ -40,6 +46,23 @@ ISR(TIMER1_COMPA_vect){
     return;
   }
   timerTotal = 0;
+}
+
+void enterSleepMode() {
+  Wire.end();
+  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+  // ADCSRA = 0;
+  // set_sleep_mode (SLEEP_MODE_PWR_DOWN);
+  // noInterrupts ();
+  // sleep_enable();
+  // MCUCR = bit (BODS) | bit (BODSE);
+  // MCUCR = bit (BODS);
+  // sleep_bod_disable();
+  // interrupts();
+
+  // sleep_mode(); 
+  // GOOD NIGHT ARDUINO - arduino is sleeping
+  Wire.begin();
 }
 
 void setup() {
@@ -75,5 +98,13 @@ void loop() {
   } else {
     Serial.print("Loop duration: ");
     Serial.println(loopDuration);
+  }
+  idleFor += max(30, loopDuration);
+  if (idleFor > 10000) {
+    idleFor = 0;
+    viewController.home();
+    viewController.pushHistory(new EmptyView(&oled, &viewController));
+    enterSleepMode();
+    lastTick = millis();
   }
 }

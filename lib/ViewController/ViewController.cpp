@@ -27,6 +27,18 @@ void ViewController::back() {
     this->historyStack[this->stackLength - 1]->mount();
 }
 
+void ViewController::home() {
+    if (this->stackLength <= 1) {
+        return;
+    }
+    do {
+        this->historyStack[this->stackLength - 1]->unmount();
+        delete [] this->historyStack[this->stackLength - 1];
+        this->stackLength--;
+    } while (this->stackLength > 1);
+    this->historyStack[this->stackLength - 1]->mount();
+}
+
 void ViewController::onClick() {
     if (this->stackLength <= 0) {
         return;
