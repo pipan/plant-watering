@@ -22,6 +22,10 @@ class ValveDetailView : public View {
         char scrollIndex;
         char focusIndex;
         bool changed;
+        int repeatValue;
+        int volumeValue;
+        int splitValue;
+        bool autoValue;
         CursorAnimation animation;
 };
 
