@@ -6,20 +6,32 @@
 #include <ViewController.h>
 #include <U8g2lib.h>
 #include <Datetime.h>
-#include <Timer.h>
 #include <Wire.h>
 #include <Rtc.h>
 #include <LowPower.h>
+
+#define DEBUG 1
+
+#define STATE_RUNNING 0
+#define STATE_SLEEP 1
+
+#define SLEEP_LIMIT 15000
+#define LOOP_PREFERED_TIME 30
 
 U8G2_SSD1306_128X64_NONAME_2_4W_SW_SPI oled(U8G2_R0, 13, 12, 10, 11, 9);
 RotaryEncoder encoder(2, 3);
 PushButton encoderButton(4, LOW);
 ViewController viewController;
-Timer timer;
 unsigned long lastTick = 0;
-const char TIMER_LENGH = 4;
 char timerTotal = 0;
-int idleFor = 0;
+volatile int idleFor = 0;
+volatile char state = STATE_RUNNING;
+
+void wakeUp() {
+  Serial.println("WAKE UP");
+  state = STATE_RUNNING;
+  idleFor = 0;
+}
 
 void encoderChange(bool clockwise) {
   viewController.onInput(clockwise);
@@ -38,29 +50,17 @@ void buttonHold() {
 
 void interupt() {
   encoder.queue();
-}
-
-ISR(TIMER1_COMPA_vect){
-  timerTotal += TIMER_LENGH;
-  if (timerTotal < 60) {
-    return;
-  }
-  timerTotal = 0;
+  wakeUp();
 }
 
 void enterSleepMode() {
+  if (state != STATE_SLEEP) {
+    state = STATE_SLEEP;
+    viewController.home();
+    viewController.pushHistory(new EmptyView(&oled, &viewController));
+  }
   Wire.end();
-  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
-  // ADCSRA = 0;
-  // set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-  // noInterrupts ();
-  // sleep_enable();
-  // MCUCR = bit (BODS) | bit (BODSE);
-  // MCUCR = bit (BODS);
-  // sleep_bod_disable();
-  // interrupts();
-
-  // sleep_mode(); 
+  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
   // GOOD NIGHT ARDUINO - arduino is sleeping
   Wire.begin();
 }
@@ -70,8 +70,6 @@ void setup() {
   oled.begin();
   encoder.begin();
   encoderButton.begin();
-
-  timer.beginHz(TIMER_LENGH);
 
   encoder.onChange(encoderChange);
   encoderButton.onHold(buttonHold, 500);
@@ -87,24 +85,25 @@ void setup() {
 
 void loop() {
   unsigned long loopStart = millis();
-  encoder.unqueue();
-  encoderButton.read();
-  unsigned long ms = millis();
-  viewController.onTick(Datetime::msDiff(lastTick, ms));
-  lastTick = ms;
-  unsigned long loopDuration = Datetime::msDiff(loopStart, millis());
-  if (loopDuration < 30) {
-    delay(max(0, 30 - loopDuration));
+  unsigned long tick = Datetime::msDiff(lastTick, loopStart);
+  lastTick = loopStart;
+
+  if (idleFor > SLEEP_LIMIT) {
+    enterSleepMode();
   } else {
+    idleFor += tick;
+    encoder.unqueue();
+    encoderButton.read();
+    viewController.onTick(tick);
+  }
+  unsigned long loopDuration = Datetime::msDiff(loopStart, millis());
+  if (loopDuration < LOOP_PREFERED_TIME) {
+    delay(LOOP_PREFERED_TIME - loopDuration);
+  }
+  #ifdef DEBUG
+  if (loopDuration > LOOP_PREFERED_TIME) {
     Serial.print("Loop duration: ");
     Serial.println(loopDuration);
   }
-  idleFor += max(30, loopDuration);
-  if (idleFor > 10000) {
-    idleFor = 0;
-    viewController.home();
-    viewController.pushHistory(new EmptyView(&oled, &viewController));
-    enterSleepMode();
-    lastTick = millis();
-  }
+  #endif
 }

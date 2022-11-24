@@ -7,6 +7,8 @@
 #include <TimeUnit.h>
 #include <VolumeUnit.h>
 #include <Text.h>
+#include <EEPROM.h>
+#include <WatterQueue.h>
 
 ValveDetailView::ValveDetailView(U8G2 *oled, ViewHistory *history, unsigned char index) {
     this->oled = oled;
@@ -15,26 +17,43 @@ ValveDetailView::ValveDetailView(U8G2 *oled, ViewHistory *history, unsigned char
     this->scrollIndex = 0;
     this->focusIndex = 0;
     this->changed = false;
-    this->repeatValue = 0;
-    this->volumeValue = 0;
-    this->splitValue = 0;
-    this->autoValue = false;
+    EEPROM.get(this->index * 64, this->valveConfig);
+    if (this->valveConfig.cycle == -1) {
+        this->valveConfig.cycle = 48;
+    }
+    if (this->valveConfig.volume == -1) {
+        this->valveConfig.volume = 1000;
+    }
+    if (this->valveConfig.split == -1) {
+        this->valveConfig.split = 1;
+    }
+    if (this->valveConfig.autoAdjust == -1) {
+        this->valveConfig.autoAdjust = 0;
+    }
 }
 
 void ValveDetailView::mount() {
     this->changed = true;
 }
 
-void ValveDetailView::unmount() { }
+void ValveDetailView::unmount() {
+    EEPROM.put(this->index * 64, this->valveConfig);
+}
 
 void ValveDetailView::onClick() {
-    if (this->focusIndex <= 1 || this->focusIndex >= 5) {
-        if (this->focusIndex == 5) {
-            this->autoValue = !this->autoValue;
-            this->changed = true;
-        }
+    if (this->focusIndex == 0) {
+        WatterQueue::push(this->index);
         return;
     }
+    if (this->focusIndex == 1) {
+        return;
+    }
+    if (this->focusIndex == 5) {
+        this->valveConfig.autoAdjust = this->valveConfig.autoAdjust ? 0 : 1;
+        this->changed = true;
+        return;
+    }
+        
     this->animation.toggle();
     this->changed = true;
 }
@@ -46,18 +65,18 @@ void ValveDetailView::onHold() {
 void ValveDetailView::onInput(bool clockwise) {
     if (this->animation.getState() > -1) {
         if (this->focusIndex == 2) {
-            this->repeatValue = clockwise ? TimeUnit::increment(this->repeatValue) : TimeUnit::decrement(this->repeatValue);
-            this->repeatValue = min(this->repeatValue, 1440);
+            this->valveConfig.cycle= clockwise ? TimeUnit::increment(this->valveConfig.cycle) : TimeUnit::decrement(this->valveConfig.cycle);
+            this->valveConfig.cycle = min(this->valveConfig.cycle, 1440);
             this->changed = true;
         }
         if (this->focusIndex == 3) {
-            this->volumeValue = clockwise ? VolumeUnit::increment(this->volumeValue) : VolumeUnit::decrement(this->volumeValue);
-            this->volumeValue = min(this->volumeValue, 9750);
+            this->valveConfig.volume = clockwise ? VolumeUnit::increment(this->valveConfig.volume) : VolumeUnit::decrement(this->valveConfig.volume);
+            this->valveConfig.volume = min(this->valveConfig.volume, 9750);
             this->changed = true;
         }
         if (this->focusIndex == 4) {
-            this->splitValue += clockwise ? 1 : -1;
-            this->splitValue = constrain(this->splitValue, 0, 9);
+            this->valveConfig.split += clockwise ? 1 : -1;
+            this->valveConfig.split = constrain(this->valveConfig.split, 0, 9);
             this->changed = true;
         }
         return;
@@ -94,7 +113,7 @@ void ValveDetailView::onTick(unsigned long msDiff) {
         shrinkBoundsRight(bounds, 8);
         bounds[3] = bounds[3] / 2;
         if (scrollIndex == 0) {
-            const unsigned char *icons[2] = {Icons::run, Icons::calibration};
+            const unsigned char *icons[2] = {focusIndex == 0 ? Icons::waterOpen : Icons::waterClosed, Icons::calibration};
             components.drawIconsAround(bounds, icons, 2, Icons::width, Icons::height);
             if (focusIndex <= 1) {
                 uint8_t focusBounds[4];
@@ -103,30 +122,31 @@ void ValveDetailView::onTick(unsigned long msDiff) {
                 setCenterBounds(focusBounds, Icons::width, Icons::height);
                 components.drawFocus(focusBounds, expandedPx);
             }
+
             bounds[1] += bounds[3];
         }
         if (this->scrollIndex == 0 || this->scrollIndex == 1) {
             char valueString[] = "00d 00h";
-            Text::number(valueString, this->repeatValue / 24, 2);
-            Text::number(valueString + 4, this->repeatValue % 24, 2);
-            components.drawInput(bounds, "Repeat", valueString, this->focusIndex == 2 ? expandedPx : -1);
+            Text::number(valueString, this->valveConfig.cycle / 24, 2);
+            Text::number(valueString + 4, this->valveConfig.cycle % 24, 2);
+            components.drawInput(bounds, "Cycle", valueString, this->focusIndex == 2 ? expandedPx : -1);
             bounds[1] += bounds[3];
         }
         if (this->scrollIndex == 1 || this->scrollIndex == 2) {
             char valueString[] = "0.00l";
-            Text::number(valueString, this->volumeValue / 1000, 1);
-            Text::number(valueString + 2, (this->volumeValue % 1000) / 10, 2);
+            Text::number(valueString, this->valveConfig.volume / 1000, 1);
+            Text::number(valueString + 2, (this->valveConfig.volume % 1000) / 10, 2);
             components.drawInput(bounds, "Amount", valueString, this->focusIndex == 3 ? expandedPx : -1);
             bounds[1] += bounds[3];
         }
         if (this->scrollIndex == 2 || this->scrollIndex == 3) {
             char valueString[] = "0";
-            Text::number(valueString, this->splitValue, 1);
+            Text::number(valueString, this->valveConfig.split, 1);
             components.drawInput(bounds, "Split", valueString, this->focusIndex == 4 ? expandedPx : -1);
             bounds[1] += bounds[3];
         }
         if (this->scrollIndex == 3) {
-            components.drawInput(bounds, "Auto", this->autoValue ? "Yes" : "No", this->focusIndex == 5 ? expandedPx : -1);
+            components.drawInput(bounds, "Auto", this->valveConfig.autoAdjust ? "Yes" : "No", this->focusIndex == 5 ? expandedPx : -1);
         }
     } while (this->oled->nextPage());
 }

@@ -141,3 +141,19 @@ void OledComponents::drawInput(uint8_t bounds[], const char *label, const char *
         this->drawFocus(focusBounds, expandedFocus);
     }
 }
+
+void OledComponents::drawCheck(uint8_t bounds[], uint8_t shadow) {
+    uint8_t checkBounds[4];
+    copyBounds(bounds, checkBounds);
+    checkBounds[0] += checkBounds[2] - 3;
+    checkBounds[1] -= 3;
+    checkBounds[2] = 7;
+    checkBounds[3] = 7;
+    uint8_t origColor = this->oled->getDrawColor();
+    this->oled->setDrawColor(0);
+    this->oled->drawDisc(checkBounds[0] + 3, checkBounds[1] + 3, 3 + shadow);
+    this->oled->setDrawColor(1);
+    const uint8_t check[] =  { 0x3e, 0x41, 0x3e, 0x1c, 0x2a, 0x5d, 0x3e }; //{ 0x1c, 0x42, 0x21, 0x15, 0x49, 0x22, 0x1c };
+    this->oled->drawXBM(checkBounds[0], checkBounds[1], checkBounds[2], checkBounds[3], check);
+    this->oled->setDrawColor(origColor);
+}

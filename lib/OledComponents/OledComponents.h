@@ -19,6 +19,7 @@ class OledComponents {
         void drawFocus(const uint8_t bounds[]);
         void drawFocus(const uint8_t bounds[], int expand);
         void drawIconsAround(uint8_t bounds[], const unsigned char *icons[], uint8_t length, uint8_t width, uint8_t height);
+        void drawCheck(uint8_t bounds[], uint8_t shadow);
     private:
         U8G2 *oled;
 };

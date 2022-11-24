@@ -2,8 +2,6 @@
 #include <Wire.h>
 #include <Arduino.h>
 
-const char Rtc::DS1307_ADDRESS = 0b1101000;
-
 void Rtc::begin() {
     Wire.begin();
 }
@@ -82,10 +80,10 @@ void Rtc::setYear(int year) {
 }
 
 char Rtc::read(char address) {
-    Wire.beginTransmission(Rtc::DS1307_ADDRESS);
+    Wire.beginTransmission(DS1307_ADDRESS);
     Wire.write(address);
     Wire.endTransmission();
-    Wire.requestFrom(Rtc::DS1307_ADDRESS, 1);
+    Wire.requestFrom(DS1307_ADDRESS, 1);
     return Wire.read();
 }
 
@@ -95,7 +93,7 @@ char Rtc::readDecimal(char address) {
 }
 
 void Rtc::write(char address, char value) {
-    Wire.beginTransmission(Rtc::DS1307_ADDRESS);
+    Wire.beginTransmission(DS1307_ADDRESS);
     Wire.write(address);
     Wire.write(value);
     Wire.endTransmission();

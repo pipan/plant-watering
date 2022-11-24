@@ -1,9 +1,10 @@
 #ifndef Rtc_h
 #define Rtc_h
 
+#define DS1307_ADDRESS 0b1101000
+
 class Rtc {
     public:
-        static const char DS1307_ADDRESS;
         static void begin();
         static void start();
         static void stop();

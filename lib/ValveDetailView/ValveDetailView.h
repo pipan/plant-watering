@@ -5,6 +5,7 @@
 #include <ViewHistory.h>
 #include <U8g2lib.h>
 #include <CursorAnimation.h>
+#include <ValveConfig.h>
 
 class ValveDetailView : public View {
     public:
@@ -22,10 +23,7 @@ class ValveDetailView : public View {
         char scrollIndex;
         char focusIndex;
         bool changed;
-        int repeatValue;
-        int volumeValue;
-        int splitValue;
-        bool autoValue;
+        ValveConfig valveConfig;
         CursorAnimation animation;
 };
 
